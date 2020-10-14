@@ -7,6 +7,7 @@ module ApiPagination
       options[:page]     = options[:page].to_i
       options[:page]     = 1 if options[:page] <= 0
       options[:per_page] = options[:per_page].to_i
+      options[:max_per_page] = options[:max_per_page].to_i
 
       case ApiPagination.config.paginator
       when :pagy
@@ -96,6 +97,7 @@ module ApiPagination
 
       collection = Kaminari.paginate_array(collection, paginate_array_options) if collection.is_a?(Array)
       collection = collection.page(options[:page]).per(options[:per_page])
+      collection = override_max_paginates_per(collection, options)
       collection.without_count if !collection.is_a?(Array) && !ApiPagination.config.include_total
       [collection, nil]
     end
@@ -124,6 +126,11 @@ module ApiPagination
     def default_per_page_for_will_paginate(collection)
       default = WillPaginate.per_page
       extract_per_page_from_model(collection, :per_page) || default
+    end
+
+    def override_max_paginates_per(collection, options)
+      return collection unless options[:max_per_page] >= option[:per_page]
+      collection.max_paginates_per(options[:max_per_page])
     end
 
     def extract_per_page_from_model(collection, accessor)
